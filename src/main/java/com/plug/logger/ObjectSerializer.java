@@ -2,6 +2,7 @@ package com.plug.logger;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -25,6 +26,10 @@ class ObjectSerializer {
         objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
         // Desactivar fechas como timestamps
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // Configuraciones adicionales para ser más permisivo
+        objectMapper.disable(SerializationFeature.FAIL_ON_SELF_REFERENCES);
+        objectMapper.disable(SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS);
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
     
     /**
@@ -50,16 +55,26 @@ class ObjectSerializer {
             String json = objectMapper.writeValueAsString(obj);
             return json;
         } catch (JsonProcessingException e) {
-            // Si falla la serialización JSON, devolver información del error y el tipo
-            return String.format("[Serialization failed for %s: %s - toString: %s]", 
-                obj.getClass().getSimpleName(), 
-                e.getMessage(),
-                obj.toString());
+            // Si falla la serialización JSON, devolver información del error
+            String errorMsg = String.format("[Serialization failed for %s: %s]", 
+                obj.getClass().getName(), 
+                e.getMessage());
+            // Log del error para debugging
+            System.err.println("ObjectSerializer error: " + errorMsg);
+            e.printStackTrace();
+            // Intentar con toString() como fallback
+            try {
+                return obj.toString();
+            } catch (Exception toStringEx) {
+                return errorMsg;
+            }
         } catch (Exception e) {
             // Cualquier otro error
-            return String.format("[Error serializing %s: %s]", 
-                obj.getClass().getSimpleName(), 
+            String errorMsg = String.format("[Error serializing %s: %s]", 
+                obj.getClass().getName(), 
                 e.getMessage());
+            System.err.println("ObjectSerializer error: " + errorMsg);
+            return errorMsg;
         }
     }
     
