@@ -140,52 +140,24 @@ public class LoggingDecorator<T> implements InvocationHandler {
         }
         
         // Verificar si el nombre del parámetro coincide con claves sensibles
-        boolean shouldWipe = false;
-        boolean shouldProtect = false;
-        
         if (gatheredWipedKeys != null && gatheredWipedKeys.length > 0) {
             for (String key : gatheredWipedKeys) {
                 if (paramName.toLowerCase().contains(key.toLowerCase())) {
-                    shouldWipe = true;
-                    break;
-                }
-            }
-        }
-        
-        if (!shouldWipe && gatheredProtectedKeys != null && gatheredProtectedKeys.length > 0) {
-            for (String key : gatheredProtectedKeys) {
-                if (paramName.toLowerCase().contains(key.toLowerCase())) {
-                    shouldProtect = true;
-                    break;
-                }
-            }
-        }
-        
-        if (shouldWipe) {
-            return "[WIPED]";
-        }
-        
-        // Serializar el objeto
-        String stringValue = ObjectSerializer.serialize(arg);
-        
-        // Verificar si el contenido contiene claves sensibles
-        if (gatheredWipedKeys != null && gatheredWipedKeys.length > 0) {
-            for (String key : gatheredWipedKeys) {
-                if (stringValue.toLowerCase().contains(key.toLowerCase())) {
                     return "[WIPED]";
                 }
             }
         }
         
-        if (shouldProtect || (gatheredProtectedKeys != null && gatheredProtectedKeys.length > 0)) {
+        if (gatheredProtectedKeys != null && gatheredProtectedKeys.length > 0) {
             for (String key : gatheredProtectedKeys) {
-                if (stringValue.toLowerCase().contains(key.toLowerCase())) {
-                    return SecurityUtil.protect(stringValue);
+                if (paramName.toLowerCase().contains(key.toLowerCase())) {
+                    return SecurityUtil.protect(ObjectSerializer.serialize(arg));
                 }
             }
         }
         
-        return stringValue;
+        // Serializar el objeto normalmente
+        return ObjectSerializer.serialize(arg);
     }
 
     private String[] initializeKeys(String[] providedKeys, String[] defaultKeys) {
