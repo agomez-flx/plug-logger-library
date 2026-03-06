@@ -1,5 +1,7 @@
 package com.plug.logger;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -12,10 +14,14 @@ class ObjectSerializer {
     
     static {
         objectMapper = new ObjectMapper();
-        // Configurar para formato legible
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        // Configurar para formato legible sin indentación (una línea)
+        objectMapper.disable(SerializationFeature.INDENT_OUTPUT);
         // Ignorar propiedades vacías
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        // Incluir todas las propiedades, incluso nulls
+        objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        // Desactivar fechas como timestamps
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
     
     /**
@@ -38,10 +44,19 @@ class ObjectSerializer {
         
         // Para objetos complejos, intentar serializar a JSON
         try {
-            return objectMapper.writeValueAsString(obj);
+            String json = objectMapper.writeValueAsString(obj);
+            return json;
+        } catch (JsonProcessingException e) {
+            // Si falla la serialización JSON, devolver información del error y el tipo
+            return String.format("[Serialization failed for %s: %s - toString: %s]", 
+                obj.getClass().getSimpleName(), 
+                e.getMessage(),
+                obj.toString());
         } catch (Exception e) {
-            // Si falla la serialización JSON, usar toString()
-            return obj.toString();
+            // Cualquier otro error
+            return String.format("[Error serializing %s: %s]", 
+                obj.getClass().getSimpleName(), 
+                e.getMessage());
         }
     }
     
